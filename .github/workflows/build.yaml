@@ -2,63 +2,51 @@ name: Build wheels
 
 on:
   workflow_dispatch:
-  # repository_dispatch:
+    inputs:
+      commit:
+        description: Commit sha
+        required: true
+        type: string
+  repository_dispatch:
+
+env:
+  REPO: ${{ github.repository_owner }}/mypy
 
 jobs:
-  generate_wheels_matrix:
-    name: Generate wheels matrix
-    runs-on: ubuntu-latest
-    outputs:
-      include: ${{ steps.set-matrix.outputs.include }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Checkout mypy
-        shell: bash
-        # use a commit hash checked into a file to get the mypy revision to build.
-        # submodules prove problematic since .git is outside cibuildwheel's manylinux container
-        run: |
-          git clone https://github.com/python/mypy.git --recurse-submodules
-          git -C mypy checkout $(cat mypy_commit)
-      - name: Install cibuildwheel and pypyp
-        run: |
-          pipx install cibuildwheel==2.11.1
-          pipx install pypyp==1
-      - id: set-matrix
-        run: |
-          MATRIX=$(
-            {
-              cibuildwheel --config-file=cibuildwheel.toml --print-build-identifiers --platform linux mypy \
-              | pyp 'json.dumps({"only": x, "os": "ubuntu-latest"})' \
-              && cibuildwheel --config-file=cibuildwheel.toml --print-build-identifiers --platform macos mypy \
-              | pyp 'json.dumps({"only": x, "os": "macos-latest"})' \
-              && cibuildwheel --config-file=cibuildwheel.toml --print-build-identifiers --platform windows mypy \
-              | pyp 'json.dumps({"only": x, "os": "windows-latest"})'
-            } | pyp 'json.dumps(list(map(json.loads, lines)))'
-          )
-          echo "include=$MATRIX" | tee -a $GITHUB_OUTPUT
-        env:
-          CIBW_ARCHS_LINUX: x86_64
-          CIBW_ARCHS_MACOS: x86_64 arm64
-          CIBW_ARCHS_WINDOWS: AMD64
-
   build_wheels:
     name: Build ${{ matrix.only }}
-    needs: generate_wheels_matrix
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.generate_wheels_matrix.outputs.include) }}
-
+        include:
+          - os: ubuntu-latest
+            only: cp310-manylinux_x86_64
+          - os: ubuntu-latest
+            only: cp311-manylinux_x86_64
+          - os: macos-latest
+            only: cp310-macosx_x86_64
+          - os: macos-latest
+            only: cp311-macosx_x86_64
     steps:
       - uses: actions/checkout@v3
+      - name: Get commit sha
+        id: get-sha
+        run: |
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            sha=${{ github.event.inputs.commit }}
+          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+            sha=${{ github.event.after }}
+          fi
+          echo "Commit: $sha"
+          echo "commit=$sha" >> $GITHUB_OUTPUT
       - name: Checkout mypy
         shell: bash
         # use a commit hash checked into a file to get the mypy revision to build.
         # submodules prove problematic since .git is outside cibuildwheel's manylinux container
         run: |
-          git clone https://github.com/python/mypy.git --recurse-submodules
-          git -C mypy checkout $(cat mypy_commit)
+          git clone https://github.com/${{ env.REPO }}.git
+          git -C mypy checkout ${{ steps.get-sha.outputs.commit }}
 
       - uses: pypa/cibuildwheel@v2.11.1
         with:
@@ -73,6 +61,7 @@ jobs:
 
   build_sdist_python_wheel:
     name: sdist and python wheel
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -84,10 +73,9 @@ jobs:
         shell: bash
         run: |
           COMMIT=$(cat mypy_commit)
-          git clone https://github.com/python/mypy.git
+          git clone https://github.com/${{ env.REPO }}.git
           cd mypy
           git checkout $COMMIT
-          git submodule update --init --recursive
       - name: Run check-manifest
         run: |
           cd mypy
@@ -103,63 +91,12 @@ jobs:
           name: dist
           path: |
             mypy/dist/*.whl
-            mypy/dist/*.tar.gz
-  build_wasm_wheel:
-    name: WASM wheel for 3.10
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        name: Install Python
-        with:
-          python-version: "3.10"
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18.5.0 # pyodide tests with this version
-      - name: Install emscripten
-        id: install_emsdk
-        run: |
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          # Version of Emscripten pyodide 0.21.0 uses.
-          ./emsdk install 3.1.14
-          ./emsdk activate 3.1.14
-          # We need the location of emscripten when we use pyodide-build
-          echo "EMSCRIPTEN_DIR=$(pwd)" >> $GITHUB_OUTPUT
-      - name: Checkout mypy
-        shell: bash
-        run: |
-          COMMIT=$(cat mypy_commit)
-          git clone https://github.com/python/mypy.git
-          cd mypy
-          git checkout $COMMIT
-          git submodule update --init --recursive
-      - name: Install pyodide-build
-        run: |
-          python -m pip install "pyodide-build==0.21.0"
-      - name: Build wasm wheels
-        env:
-          MYPY_USE_MYPYC: "1"
-          MYPYC_OPT_LEVEL: "3"
-          EMSCRIPTEN_DIR: ${{ steps.install_emsdk.outputs.EMSCRIPTEN_DIR }}
-        run: |
-          cd mypy
-          source $EMSCRIPTEN_DIR/emsdk_env.sh
-          pyodide build --exports pyinit
-      - name: Install pyodide for WASM test
-        run: |
-          npm install pyodide@0.21.3
-      - name: Run WASM smoke test
-        run: |
-          node wasm_test.js
-      - uses: actions/upload-artifact@v3
-        with:
-          name: dist
-          path: |
-            mypy/dist/*.whl
+
   release:
     name: create release
-    needs: [build_wheels, build_sdist_python_wheel]
+    needs:
+      - build_wheels
+      - build_sdist_python_wheel
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -172,7 +109,7 @@ jobs:
         # https://github.com/actions/upload-release-asset/issues/47
         uses: actions/github-script@v6
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs').promises;
             const { repo: { owner, repo }, sha } = context;
