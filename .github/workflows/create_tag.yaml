@@ -1,0 +1,99 @@
+name: Create tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit sha
+        required: true
+        type: string
+  repository_dispatch:
+    types: [create-tag]
+
+env:
+  MYPY_REPO: ${{ github.repository_owner }}/mypy
+
+jobs:
+  create_tag:
+    name: Create tag
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3.3.0
+      - name: Get commit sha
+        id: get-sha
+        run: |
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            sha=${{ github.event.inputs.commit }}
+          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
+            sha=${{ github.event.client_payload.commit }}
+          fi
+          echo "Commit: $sha"
+          echo "commit=$sha" >> $GITHUB_OUTPUT
+      - name: Get mypy version
+        id: mypy-version
+        run: |
+          sha=${{ steps.get-sha.outputs.commit }}
+          git clone https://github.com/${{ env.MYPY_REPO }}
+          git -C mypy checkout $sha
+          if [[ $? == 1 ]]; then
+            echo "Commit $sha doesn't exist"
+            exit 1
+          fi
+
+          base=$(
+            cat mypy/mypy/version.py | \
+            grep -e ^__version__ | \
+            cut -d '=' -f2 | tr -d ' "')
+          if [[ $base == *"+dev" ]]; then
+            version="v$base.$sha"
+          else
+            version="v$base"
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Found: $version"
+      - name: Check existing mypy tags
+        id: mypy-wheels
+        continue-on-error: true
+        run: |
+          tag=${{ steps.mypy-version.outputs.version }}
+          echo "$tag"
+          res=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/mypyc/mypy_mypyc-wheels/releases/tags/$tag)
+          echo "Found at $(echo $res | jq -r '.html_url')"
+          echo "found=true" >> $GITHUB_OUTPUT
+      - name: Check existing custom tags
+        id: custom-wheels
+        continue-on-error: true
+        if: steps.mypy-wheels.outputs.found != 'true'
+        run: |
+          tag=${{ steps.mypy-version.outputs.version }}
+          echo "$tag"
+          res=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/releases/tags/$tag)
+          echo "Found at $(echo $res | jq -r '.html_url')"
+          echo "found=true" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v3.3.0
+        if: |
+          steps.mypy-wheels.outputs.found != 'true'
+          && steps.custom-wheels.outputs.found != 'true'
+        with:
+          token: ${{ secrets.PUSH_TOKEN }}
+      - name: Create Tag
+        if: |
+          steps.mypy-wheels.outputs.found != 'true'
+          && steps.custom-wheels.outputs.found != 'true'
+        run: |
+          version=${{ steps.mypy-version.outputs.version }}
+
+          git config user.email "nobody"
+          git config user.name "custom mypy wheels autopush"
+
+          echo "${{ steps.get-sha.outputs.commit }}" > mypy_commit
+          git add mypy_commit
+          git commit -m "Build wheels for mypy $version"
+          git tag $version
+          git push --tags
