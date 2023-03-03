@@ -46,7 +46,7 @@ jobs:
             cat mypy/mypy/version.py | \
             grep -e ^__version__ | \
             cut -d '=' -f2 | tr -d ' "')
-          if [[ $base == *"+dav" ]]; then
+          if [[ $base == *"+dev" ]]; then
             version="v$base.$sha"
           else
             version="v$base"
