@@ -1,6 +1,9 @@
 name: Build wheels
 
-on: [push]
+on:
+  push:
+    tags:
+      - '*'
 
 env:
   MYPY_REPO: ${{ github.repository_owner }}/mypy
