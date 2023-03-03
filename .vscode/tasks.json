@@ -1,0 +1,22 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Pip build Lambda deps",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m", "pip", "install",
+                "--platform=manylinux2014_x86_64",
+                "--target=out/lambda_layer/python",
+                "--implementation=cp",
+                "--python=3.9",
+                "--only-binary=:all:",
+                "--upgrade",
+                "-r", "requirements_aws.txt",
+            ]
+        },
+    ]
+}
