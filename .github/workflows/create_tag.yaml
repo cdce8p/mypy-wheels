@@ -59,9 +59,10 @@ jobs:
         run: |
           tag=${{ steps.mypy-version.outputs.version }}
           echo "$tag"
-          gh api \
+          res=$(gh api \
             -H "Accept: application/vnd.github+json" \
-            /repos/mypyc/mypy_mypyc-wheels/releases/tags/$tag >> /dev/null
+            /repos/mypyc/mypy_mypyc-wheels/releases/tags/$tag)
+          echo "Found at $(echo $res | jq -r '.html_url')"
           echo "found=true" >> $GITHUB_OUTPUT
       - name: Check existing custom tags
         id: custom-wheels
@@ -70,9 +71,10 @@ jobs:
         run: |
           tag=${{ steps.mypy-version.outputs.version }}
           echo "$tag"
-          gh api \
+          res=$(gh api \
             -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/releases/tags/$tag >> /dev/null
+            /repos/${{ github.repository }}/releases/tags/$tag)
+          echo "Found at $(echo $res | jq -r '.html_url')"
           echo "found=true" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3.3.0
         if: |
@@ -91,6 +93,7 @@ jobs:
           git config user.name "custom mypy wheels autopush"
 
           echo "${{ steps.get-sha.outputs.commit }}" > mypy_commit
-          git commit -am "Build wheels for mypy $version"
+          git add mypy_commit
+          git commit -m "Build wheels for mypy $version"
           git tag $version
           git push --tags
