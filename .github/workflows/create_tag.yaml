@@ -42,7 +42,7 @@ jobs:
 
           base=$(
             cat mypy/mypy/version.py | \
-            grep -e ^__version_- | \
+            grep -e ^__version__ | \
             cut -d '=' -f2 | tr -d ' "')
           if [[ $base == *"+dav" ]]; then
             version="v$base.$sha"
@@ -59,7 +59,7 @@ jobs:
           echo "$tag"
           gh api \
             -H "Accept: application/vnd.github+json" \
-            /repos/mypyc/mypy_mypyc-wheels/releases/tags/$tag)
+            /repos/mypyc/mypy_mypyc-wheels/releases/tags/$tag
           echo "found=true" >> $GITHUB_OUTPUT
       - name: Check existing custom tags
         id: custom-wheels
@@ -70,7 +70,7 @@ jobs:
           echo "$tag"
           gh api \
             -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/releases/tags/$tag)
+            /repos/${{ github.repository }}/releases/tags/$tag
           echo "found=true" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3.3.0
         if: |
@@ -82,6 +82,7 @@ jobs:
         if: |
           steps.mypy-wheels.outputs.found != 'true'
           && steps.custom-wheels.outputs.found != 'true'
+          && false
         run: |
           version=${{ steps.mypy-version.outputs.version }}
           echo "${{ steps.get-sha.outputs.commit }}" > mypy_commit
