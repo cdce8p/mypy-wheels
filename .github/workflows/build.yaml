@@ -1,13 +1,14 @@
 name: Build wheels
 
 on:
-  workflow_dispatch:
-    inputs:
-      commit:
-        description: Commit sha
-        required: true
-        type: string
-  repository_dispatch:
+  pull_request:
+  # workflow_dispatch:
+  #   inputs:
+  #     commit:
+  #       description: Commit sha
+  #       required: true
+  #       type: string
+  # repository_dispatch:
 
 env:
   REPO: ${{ github.repository_owner }}/mypy
