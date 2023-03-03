@@ -1,17 +1,9 @@
 name: Build wheels
 
-on:
-  pull_request:
-  # workflow_dispatch:
-  #   inputs:
-  #     commit:
-  #       description: Commit sha
-  #       required: true
-  #       type: string
-  # repository_dispatch:
+on: [push]
 
 env:
-  REPO: ${{ github.repository_owner }}/mypy
+  MYPY_REPO: ${{ github.repository_owner }}/mypy
 
 jobs:
   build_wheels:
@@ -30,25 +22,12 @@ jobs:
           - os: macos-latest
             only: cp311-macosx_x86_64
     steps:
-      - uses: actions/checkout@v3
-      - name: Get commit sha
-        id: get-sha
-        run: |
-          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            sha=${{ github.event.inputs.commit }}
-          elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
-            sha=${{ github.event.client_payload.commit }}
-          fi
-          echo "Commit: $sha"
-          echo "commit=$sha" >> $GITHUB_OUTPUT
-          exit 1
+      - uses: actions/checkout@v3.3.0
       - name: Checkout mypy
         shell: bash
-        # use a commit hash checked into a file to get the mypy revision to build.
-        # submodules prove problematic since .git is outside cibuildwheel's manylinux container
         run: |
-          git clone https://github.com/${{ env.REPO }}.git
-          git -C mypy checkout ${{ steps.get-sha.outputs.commit }}
+          git clone https://github.com/${{ env.MYPY_REPO }}.git
+          git -C mypy checkout $(cat mypy_commit)
 
       - uses: pypa/cibuildwheel@v2.11.1
         with:
@@ -61,44 +40,9 @@ jobs:
           name: dist
           path: ./wheelhouse/*.whl
 
-  build_sdist_python_wheel:
-    name: sdist and python wheel
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        name: Install Python
-        with:
-          python-version: "3.9"
-      - name: Checkout mypy
-        shell: bash
-        run: |
-          COMMIT=$(cat mypy_commit)
-          git clone https://github.com/${{ env.REPO }}.git
-          cd mypy
-          git checkout $COMMIT
-      - name: Run check-manifest
-        run: |
-          cd mypy
-          pip install check-manifest
-          check-manifest -v
-      - name: Build sdist and wheel
-        run: |
-          cd mypy
-          pip install --upgrade setuptools build
-          python -m build
-      - uses: actions/upload-artifact@v3
-        with:
-          name: dist
-          path: |
-            mypy/dist/*.whl
-
   release:
     name: create release
-    needs:
-      - build_wheels
-      - build_sdist_python_wheel
+    needs: [build_wheels]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -107,8 +51,6 @@ jobs:
           name: dist
           path: dist
       - name: Release
-        if: ${{ github.event_name != 'pull_request' }}
-        # https://github.com/actions/upload-release-asset/issues/47
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

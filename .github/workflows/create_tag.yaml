@@ -11,7 +11,7 @@ on:
     types: [build-wheels]
 
 env:
-  MYPY_REPO: cdce8p/mypy
+  MYPY_REPO: ${{ github.repository_owner }}/mypy
 
 jobs:
   create_tag:
