@@ -31,7 +31,7 @@ Create (fine-grained) PAT token with `metadata:read` and `contents:read&write` p
 Add token as `PUSH_TOKEN` to Github Action secrets.
 
 **Create `secrets.auto.tfvars`**  
-```
+```HCL
 github_pat = <Github PAT>
 sig_key = <Data signature key>
 mail_source = <Sender email address>
