@@ -60,14 +60,14 @@ def send_mail(*, source: str, recipient: str, subject: str, message: str) -> Non
         print("Sent message")
 
 
-def trigger_gh_action(*, repo: str, github_pat: str, event_type: str, commit: str) -> requests.Response:
+def trigger_gh_action(
+    *, repo: str, github_pat: str, event_type: str, payload: dict[str, Any]
+) -> requests.Response:
     return requests.post(
         f"https://api.github.com/repos/{repo}/dispatches",
         json={
             "event_type": event_type,
-            "client_payload": {
-                "commit": commit
-            }
+            "client_payload": payload,
         },
         headers={
             "Accept": "application/vnd.github+json",
@@ -96,7 +96,10 @@ def lambda_handler(event: Mapping[str, Any], context: Mapping[str, Any]) -> dict
         repo=os.environ["repo"],
         github_pat=os.environ["github_pat"],
         event_type="create-tag",
-        commit=commit,
+        payload={
+            "commit": commit,
+            "ref": data["ref"],
+        }
     )
     if not resp.ok:
         print("An error occurred while doing the POST request")
