@@ -49,6 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v3.0.2
@@ -56,23 +57,23 @@ jobs:
           name: dist
           path: dist
       - name: Release
-        if: ${{ github.event_name != 'pull_request' }}
-        # https://github.com/actions/upload-release-asset/issues/47
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // https://github.com/actions/upload-release-asset/issues/47
             const fs = require('fs').promises;
             const { repo: { owner, repo }, sha } = context;
+            const tagName = process.env.GITHUB_REF.split("/").pop();
 
             console.log('environment', process.versions);
-            console.log({ owner, repo, sha });
+            console.log({ owner, repo, sha, tagName });
 
             const release = await github.rest.repos.createRelease({
               owner, repo,
-              // if GITHUB_REF just appears to be a branch, use tag-{commit} as the tag
-              tag_name: process.env.GITHUB_REF.includes("refs/heads/") ? "tag-" + sha : process.env.GITHUB_REF.split("/").pop(),
-              target_commitish: sha
+              tag_name: tagName,
+              target_commitish: sha,
+              name: tagName
             });
 
             console.log('created release', { release });
