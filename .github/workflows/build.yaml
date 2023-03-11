@@ -47,6 +47,8 @@ jobs:
     name: create release
     needs: [build_wheels]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v3.0.2
@@ -54,6 +56,8 @@ jobs:
           name: dist
           path: dist
       - name: Release
+        if: ${{ github.event_name != 'pull_request' }}
+        # https://github.com/actions/upload-release-asset/issues/47
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -82,3 +86,4 @@ jobs:
                 name: file,
                 data: await fs.readFile(`./dist/${file}`)
               });
+            }
