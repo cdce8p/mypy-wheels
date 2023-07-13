@@ -90,6 +90,9 @@ def lambda_handler(event: Mapping[str, Any], context: Mapping[str, Any]) -> dict
     if commit is None and data.get("zen"):
         print("Ping event")
         return create_response(200, "success")
+    if data.get("deleted"):
+        print("Deleted branch")
+        return create_response(200, "success")
     assert commit is not None
 
     resp = trigger_gh_action(
