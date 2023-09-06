@@ -18,8 +18,12 @@ jobs:
         include:
           - os: ubuntu-latest
             only: cp311-manylinux_x86_64
+          - os: ubuntu-latest
+            only: cp312-manylinux_x86_64
           - os: macos-latest
             only: cp311-macosx_arm64
+          - os: macos-latest
+            only: cp312-macosx_arm64
     steps:
       - uses: actions/checkout@v3.6.0
       - name: Checkout mypy
