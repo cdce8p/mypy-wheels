@@ -12,7 +12,7 @@ on:
 
 env:
   MYPY_REPO: ${{ github.repository_owner }}/mypy
-  REFS: "['refs/heads/dev', 'refs/heads/my-release', 'refs/heads/TypeVar-defaults', 'refs/heads/TypeVar-basic', 'origin/typeVarTuple-invariant']"
+  REFS: "['refs/heads/dev', 'refs/heads/my-release', 'refs/heads/TypeVar-defaults', 'refs/heads/TypeVar-basic', 'origin/typeVarTuple-invariant', 'origin/fix-type-store']"
 
 jobs:
   create_tag:
