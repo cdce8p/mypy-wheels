@@ -12,7 +12,7 @@ on:
 
 env:
   MYPY_REPO: ${{ github.repository_owner }}/mypy
-  REFS: "['refs/heads/dev', 'refs/heads/my-release', 'refs/heads/TypeVar-defaults', 'refs/heads/TypeVar-basic', 'origin/typeVarTuple-invariant', 'origin/fix-type-store']"
+  REFS: "['dev', 'my-release', 'TypeVar-defaults', 'TypeVar-basic', 'typeVarTuple-invariant', 'fix-type-store']"
 
 jobs:
   create_tag:
@@ -29,7 +29,7 @@ jobs:
             sha=${{ github.event.inputs.commit }}
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
             sha=${{ github.event.client_payload.commit }}
-            ref=${{ github.event.client_payload.ref }}
+            ref=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f3)
           fi
           echo "Commit: $sha"
           echo "commit=$sha" >> $GITHUB_OUTPUT
