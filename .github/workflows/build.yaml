@@ -1,6 +1,7 @@
 name: Build wheels
 
 on:
+  pull_request:
   push:
     tags:
       - '*'
@@ -38,10 +39,11 @@ jobs:
           package-dir: mypy
           only: ${{ matrix.only }}
 
-      - uses: actions/upload-artifact@v3.1.3
+      - uses: actions/upload-artifact@v4.3.1
         with:
-          name: dist
+          name: dist-${{ matrix.only }}
           path: ./wheelhouse/*.whl
+          overwrite: true
 
   release:
     name: create release
@@ -49,15 +51,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v3.0.2
+        uses: actions/download-artifact@v4.1.2
         with:
-          name: dist
+          pattern: dist-*
           path: dist
+          merge-multiple: true
       - name: Release
         uses: actions/github-script@v7
+        if: ${{ github.event_name != 'pull_request' }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
