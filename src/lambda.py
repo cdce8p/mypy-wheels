@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import hashlib
 import hmac
 import json
 import os
 import textwrap
-from typing import Any, Mapping
+from typing import Any
 
 import requests
 

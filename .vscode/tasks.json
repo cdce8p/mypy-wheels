@@ -12,7 +12,7 @@
                 "--platform=manylinux2014_x86_64",
                 "--target=out/lambda_layer/python",
                 "--implementation=cp",
-                "--python=3.9",
+                "--python-version=3.12",
                 "--only-binary=:all:",
                 "--upgrade",
                 "-r", "requirements_aws.txt",
