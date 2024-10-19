@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: Commit sha
+        description: Commit sha or ref
         required: true
         type: string
   repository_dispatch:
@@ -22,38 +22,39 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4.2.1
-      - name: Get commit sha
-        id: get-sha
+      - name: Get commit
+        id: get-commit
         run: |
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            sha=${{ github.event.inputs.commit }}
+            commit=${{ github.event.inputs.commit }}
           elif [[ ${{ github.event_name }} == 'repository_dispatch' ]]; then
-            sha=${{ github.event.client_payload.commit }}
+            commit=${{ github.event.client_payload.commit }}
             ref=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f3)
           fi
-          echo "Commit: $sha"
-          echo "commit=$sha" >> $GITHUB_OUTPUT
+          echo "Commit: $commit"
+          echo "commit=$commit" >> $GITHUB_OUTPUT
           echo "Ref: $ref"
           echo "ref=$ref" >> $GITHUB_OUTPUT
       - name: Check ref
         id: check-ref
         run: |
-          ref=${{ steps.get-sha.outputs.ref }}
-          if [[ "$ref" != '' && "${{ contains(fromJSON(env.REFS), steps.get-sha.outputs.ref) }}" != 'true' ]]; then
-            echo "Ignore ref: ${{ steps.get-sha.outputs.ref }}"
+          ref=${{ steps.get-commit.outputs.ref }}
+          if [[ "$ref" != '' && "${{ contains(fromJSON(env.REFS), steps.get-commit.outputs.ref) }}" != 'true' ]]; then
+            echo "Ignore ref: ${{ steps.get-commit.outputs.ref }}"
             echo "ignore=true" >> $GITHUB_OUTPUT
           fi
       - name: Get mypy version
         id: mypy-version
         if: steps.check-ref.outputs.ignore != 'true'
         run: |
-          sha=${{ steps.get-sha.outputs.commit }}
+          commit=${{ steps.get-commit.outputs.commit }}
           git clone https://github.com/${{ env.MYPY_REPO }}
-          git -C mypy checkout $sha
+          git -C mypy checkout ${commit}
           if [[ $? == 1 ]]; then
-            echo "Commit $sha doesn't exist"
+            echo "Commit ${commit} doesn't exist"
             exit 1
           fi
+          sha=$(git -C mypy rev-parse HEAD)
 
           base=$(
             cat mypy/mypy/version.py | \
