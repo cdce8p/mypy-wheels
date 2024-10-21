@@ -55,6 +55,8 @@ jobs:
             exit 1
           fi
           sha=$(git -C mypy rev-parse HEAD)
+          echo "sha: $sha"
+          echo "sha=$sha" >> $GITHUB_OUTPUT
 
           base=$(
             cat mypy/mypy/version.py | \
@@ -65,8 +67,8 @@ jobs:
           else
             version="v$base"
           fi
-          echo "version=$version" >> $GITHUB_OUTPUT
           echo "Found: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
       - name: Check existing mypy tags
         id: mypy-wheels
         continue-on-error: true
@@ -111,7 +113,7 @@ jobs:
           git config user.email "nobody"
           git config user.name "custom mypy wheels autopush"
 
-          echo "${{ steps.get-sha.outputs.commit }}" > mypy_commit
+          echo "${{ steps.mypy-version.outputs.sha }}" > mypy_commit
           git add mypy_commit
           git commit -m "Build wheels for mypy $version"
           git tag $version
