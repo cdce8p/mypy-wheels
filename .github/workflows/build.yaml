@@ -19,10 +19,16 @@ jobs:
         include:
           - os: ubuntu-latest
             only: cp313-manylinux_x86_64
+          - os: ubuntu-latest
+            only: cp314-manylinux_x86_64
           - os: ubuntu-24.04-arm
             only: cp313-manylinux_aarch64
+          - os: ubuntu-24.04-arm
+            only: cp314-manylinux_aarch64
           - os: macos-latest
             only: cp313-macosx_arm64
+          - os: macos-latest
+            only: cp314-macosx_arm64
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Checkout mypy
@@ -31,7 +37,7 @@ jobs:
           git clone https://github.com/${{ env.MYPY_REPO }}.git
           git -C mypy checkout $(cat mypy_commit)
 
-      - uses: pypa/cibuildwheel@v2.23.3
+      - uses: pypa/cibuildwheel@v3.0.0b4
         with:
           config-file: cibuildwheel.toml
           package-dir: mypy

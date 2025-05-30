@@ -8,6 +8,8 @@ linux.before-all = [
   "yum install -y llvm-toolset",
 ]
 
+enable = ["cpython-prerelease"]
+
 [tool.cibuildwheel.config-settings]
 --build-option = "--use-mypyc"
 
