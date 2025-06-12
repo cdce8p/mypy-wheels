@@ -78,6 +78,14 @@ def trigger_gh_action(
     )
 
 
+def print_boto_versions() -> None:
+    import boto3
+    import botocore
+
+    print(f"boto3 version: {boto3.__version__}")
+    print(f"botocore version: {botocore.__version__}")
+
+
 def lambda_handler(event: Mapping[str, Any], context: Mapping[str, Any]) -> dict[str, Any]:
     key = os.environ["sig_key"]
     body: str = event["body"]

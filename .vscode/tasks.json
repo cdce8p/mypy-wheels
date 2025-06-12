@@ -9,10 +9,10 @@
             "command": "python3",
             "args": [
                 "-m", "pip", "install",
-                "--platform=manylinux2014_x86_64",
+                "--platform=manylinux_2_28_aarch64",
                 "--target=out/lambda_layer/python",
                 "--implementation=cp",
-                "--python-version=3.12",
+                "--python-version=3.13",
                 "--only-binary=:all:",
                 "--upgrade",
                 "-r", "requirements_aws.txt",

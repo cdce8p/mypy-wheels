@@ -3,11 +3,11 @@ terraform {
   required_providers {
   aws = {
     source = "hashicorp/aws"
-    version = "~> 5.39.1"
+    version = "~> 5.99.1"
   }
   archive = {
     source = "hashicorp/archive"
-    version = "~> 2.4.2"
+    version = "~> 2.7.1"
   }
   }
 }
@@ -25,7 +25,8 @@ data "archive_file" "lambda_layer" {
 
 resource "aws_lambda_layer_version" "lambda_layer" {
   layer_name = "mypy_wheels_requests_deps"
-  compatible_runtimes = ["python3.12"]
+  compatible_runtimes = ["python3.13"]
+  compatible_architectures = ["arm64"]
 
   filename = data.archive_file.lambda_layer.output_path
   source_code_hash = filebase64sha256(data.archive_file.lambda_layer.output_path)
@@ -43,7 +44,7 @@ resource "aws_lambda_function" "mypy_wheels_dispatch" {
   role            = aws_iam_role.lambda_exec.arn
 
   handler = "lambda.lambda_handler"
-  runtime = "python3.12"
+  runtime = "python3.13"
   timeout = 10
   layers = [aws_lambda_layer_version.lambda_layer.arn]
 
