@@ -37,7 +37,7 @@ jobs:
           git clone https://github.com/${{ env.MYPY_REPO }}.git
           git -C mypy checkout $(cat mypy_commit)
 
-      - uses: pypa/cibuildwheel@v3.1.0
+      - uses: pypa/cibuildwheel@v3.1.1
         with:
           config-file: cibuildwheel.toml
           package-dir: mypy
