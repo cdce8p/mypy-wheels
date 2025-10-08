@@ -21,12 +21,12 @@ jobs:
             only: cp313-manylinux_x86_64
           - os: ubuntu-latest
             only: cp314-manylinux_x86_64
-          - os: ubuntu-24.04-arm
-            only: cp313-manylinux_aarch64
-          - os: ubuntu-24.04-arm
-            only: cp314-manylinux_aarch64
-          - os: macos-latest
-            only: cp313-macosx_arm64
+          # - os: ubuntu-24.04-arm
+          #   only: cp313-manylinux_aarch64
+          # - os: ubuntu-24.04-arm
+          #   only: cp314-manylinux_aarch64
+          # - os: macos-latest
+          #   only: cp313-macosx_arm64
           - os: macos-latest
             only: cp314-macosx_arm64
     steps:
