@@ -24,7 +24,7 @@ jobs:
           - os: macos-latest
             only: cp314-macosx_arm64
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Checkout mypy
         shell: bash
         run: |
